@@ -361,3 +361,53 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Gemini App Generator specific ignores
+# Environment files with API keys
+.env
+.env.local
+.env.production
+.env.staging
+
+# Temporary files
+*.tmp
+.temp/
+temp/
+
+# Generated application workspaces (keep directory structure but ignore contents)
+workspace/node_modules/
+workspace/*/node_modules/
+workspace/*/dist/
+workspace/*/build/
+workspace/*.log
+
+# Documentation build artifacts
+docs/_build/
+docs/.doctrees/
+*.pdf
+*.epub
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Docker volumes and data
+docker-data/
+volumes/
+
+# Backup files
+*.bak
+*.backup
+*.old
