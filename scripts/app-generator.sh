@@ -12,7 +12,15 @@ NC='\033[0m' # No Color
 call_gemini() {
     local prompt="$1"
     local temp_file
+    
+    # Validate input
+    if [[ -z "$prompt" ]]; then
+        echo "Error: Empty prompt provided" >&2
+        return 1
+    fi
+    
     temp_file=$(mktemp) || return 1
+    trap 'rm -f "$temp_file"' EXIT
     
     cat > /tmp/gemini-call.js << 'EOF'
 const { GoogleGenerativeAI } = require("@google/generative-ai");
@@ -46,7 +54,11 @@ async function generateContent() {
 generateContent();
 EOF
     
-    node /tmp/gemini-call.js "$prompt" > "$temp_file"
+    if ! node /tmp/gemini-call.js "$prompt" > "$temp_file" 2>/dev/null; then
+        echo "Error: Failed to call Gemini API" >&2
+        rm -f "$temp_file"
+        return 1
+    fi
     echo "$temp_file"
 }
 
@@ -344,7 +356,8 @@ case "$1" in
         
         prompt="$2"
         app_type="${3:-auto}"
-        app_name="${4:-$(echo "$prompt" | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]' | cut -c1-20)}"
+        # Safely generate app name, ensuring no command injection
+        app_name="${4:-$(printf '%s' "$prompt" | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]' | cut -c1-20)}"
         
         # Remove trailing hyphens
         app_name=${app_name%-}
@@ -364,8 +377,13 @@ case "$1" in
         read -p "Are you sure? This will delete all generated apps (y/N): " -n 1 -r
         echo
         if [[ $REPLY =~ ^[Yy]$ ]]; then
-            rm -rf /workspace/projects/*
-            echo -e "${GREEN}✅ Cleaned up successfully!${NC}"
+            # Safer deletion with explicit path validation
+            if [[ -d "/workspace/projects" ]]; then
+                find /workspace/projects -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} \;
+                echo -e "${GREEN}✅ Cleaned up successfully!${NC}"
+            else
+                echo -e "${YELLOW}⚠️  Projects directory not found${NC}"
+            fi
         fi
         ;;
     "help"|*)
