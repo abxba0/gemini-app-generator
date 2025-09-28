@@ -1,0 +1,35 @@
+services:
+  gemini-dev:
+    build: .
+    container_name: gemini-app-generator
+    volumes:
+      - ./workspace:/workspace:cached
+      - ./projects:/workspace/projects:cached
+      - ~/.gitconfig:/root/.gitconfig:ro
+      - gemini_node_modules:/workspace/node_modules
+    ports:
+      - "3000:3000"   # React default
+      - "4200:4200"   # Angular default  
+      - "8080:8080"   # General web server
+      - "5000:5000"   # Flask/Express alternative
+      - "3001:3001"   # Additional port
+      - "8000:8000"   # Python web servers
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - NODE_ENV=development
+      - PYTHONPATH=/workspace
+    working_dir: /workspace
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+    command: /bin/bash
+    
+    # Health check to ensure container is ready
+    healthcheck:
+      test: ["CMD", "node", "--version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  gemini_node_modules:
