@@ -31,7 +31,7 @@ echo -e "${GREEN}✅ Docker and Docker Compose are installed${NC}"
 if [ -z "$GEMINI_API_KEY" ]; then
     echo -e "${YELLOW}⚠️  GEMINI_API_KEY not found in environment${NC}"
     echo -e "${BLUE}Please enter your Google AI API key:${NC}"
-    read -s -p "API Key: " api_key
+    read -r -s -p "API Key: " api_key
     echo
     
     if [ -z "$api_key" ]; then
@@ -63,9 +63,7 @@ fi
 
 # Build the Docker image
 echo -e "${BLUE}🔨 Building Docker image...${NC}"
-docker-compose build
-
-if [ $? -ne 0 ]; then
+if ! docker-compose build; then
     echo -e "${RED}❌ Docker build failed${NC}"
     exit 1
 fi
@@ -74,9 +72,7 @@ echo -e "${GREEN}✅ Docker image built successfully${NC}"
 
 # Start the container
 echo -e "${BLUE}🚀 Starting container...${NC}"
-docker-compose up -d
-
-if [ $? -ne 0 ]; then
+if ! docker-compose up -d; then
     echo -e "${RED}❌ Failed to start container${NC}"
     exit 1
 fi
@@ -87,9 +83,7 @@ sleep 5
 
 # Configure Gemini inside the container
 echo -e "${BLUE}⚙️  Configuring Gemini...${NC}"
-docker-compose exec gemini-dev gemini-config.sh
-
-if [ $? -eq 0 ]; then
+if docker-compose exec gemini-dev gemini-config.sh; then
     echo -e "${GREEN}🎉 Setup completed successfully!${NC}"
     echo ""
     echo -e "${YELLOW}Quick Start:${NC}"
