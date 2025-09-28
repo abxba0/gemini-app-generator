@@ -55,9 +55,7 @@ EOF
 
 # Test the API connection
 echo "🔍 Testing Gemini API connection..."
-node /tmp/test-gemini.js
-
-if [ $? -eq 0 ]; then
+if node /tmp/test-gemini.js; then
     echo "✅ Gemini CLI configured successfully!"
     echo "🎉 Ready to generate applications!"
 else

@@ -11,9 +11,10 @@ NC='\033[0m' # No Color
 # Function to call Gemini API
 call_gemini() {
     local prompt="$1"
-    local temp_file=$(mktemp)
+    local temp_file
+    temp_file=$(mktemp) || return 1
     
-    cat > /tmp/gemini-call.js << EOF
+    cat > /tmp/gemini-call.js << 'EOF'
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 async function generateContent() {
@@ -26,7 +27,11 @@ async function generateContent() {
         }
     });
     
-    const prompt = \`$prompt\`;
+    const prompt = process.argv[2] || '';
+    if (!prompt.trim()) {
+        console.error("Error: No prompt provided");
+        process.exit(1);
+    }
     
     try {
         const result = await model.generateContent(prompt);
@@ -41,7 +46,7 @@ async function generateContent() {
 generateContent();
 EOF
     
-    node /tmp/gemini-call.js > "$temp_file"
+    node /tmp/gemini-call.js "$prompt" > "$temp_file"
     echo "$temp_file"
 }
 
@@ -66,7 +71,7 @@ generate_app() {
     
     # Create project directory
     mkdir -p "/workspace/projects/$app_name"
-    cd "/workspace/projects/$app_name"
+    cd "/workspace/projects/$app_name" || exit 1
     
     # Generate application based on type
     case $app_type in
@@ -126,7 +131,8 @@ Format your response with clear file separations using:
 Start with package.json first."
     
     # Call Gemini API
-    local response_file=$(call_gemini "$gemini_prompt")
+    local response_file
+    response_file=$(call_gemini "$gemini_prompt")
     
     # Parse and create files
     create_files_from_response "$response_file"
@@ -176,7 +182,8 @@ Format your response with clear file separations using:
 
 Start with package.json first."
     
-    local response_file=$(call_gemini "$gemini_prompt")
+    local response_file
+    response_file=$(call_gemini "$gemini_prompt")
     create_files_from_response "$response_file"
     
     if [ -f "package.json" ]; then
@@ -218,7 +225,8 @@ Format your response with clear file separations using:
 
 Start with requirements.txt first."
     
-    local response_file=$(call_gemini "$gemini_prompt")
+    local response_file
+    response_file=$(call_gemini "$gemini_prompt")
     create_files_from_response "$response_file"
     
     if [ -f "requirements.txt" ]; then
@@ -252,8 +260,10 @@ Respond with ONLY one word from these options:
 
 Just the technology name, nothing else."
     
-    local tech_file=$(call_gemini "$analysis_prompt")
-    local tech=$(cat "$tech_file" | tr -d '\n' | tr -d ' ' | tr '[:upper:]' '[:lower:]')
+    local tech_file
+    tech_file=$(call_gemini "$analysis_prompt")
+    local tech
+    tech=$(tr -d '\n' < "$tech_file" | tr -d ' ' | tr '[:upper:]' '[:lower:]')
     
     echo -e "${YELLOW}🎯 Selected technology: $tech${NC}"
     
@@ -292,7 +302,7 @@ create_files_from_response() {
             # Create directory if needed
             mkdir -p "$(dirname "$current_file")"
             # Clear the file
-            > "$current_file"
+            true > "$current_file"
         elif [ "$in_file" = true ]; then
             echo "$line" >> "$current_file"
         fi
@@ -337,7 +347,7 @@ case "$1" in
         app_name="${4:-$(echo "$prompt" | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]' | cut -c1-20)}"
         
         # Remove trailing hyphens
-        app_name=$(echo "$app_name" | sed 's/-*$//')
+        app_name=${app_name%-}
         
         generate_app "$prompt" "$app_type" "$app_name"
         ;;
